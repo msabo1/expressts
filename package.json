@@ -1,0 +1,30 @@
+{
+  "name": "expressts",
+  "version": "0.0.1",
+  "description": "Typescript wrapper around Express.js framework",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msabo1/expressts.git"
+  },
+  "keywords": [
+    "typescript",
+    "express",
+    "expressjs",
+    "expressts",
+    "express.js",
+    "di"
+  ],
+  "author": "Mario Sabo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/msabo1/expressts/issues"
+  },
+  "homepage": "https://github.com/msabo1/expressts#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
