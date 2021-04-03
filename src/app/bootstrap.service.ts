@@ -4,17 +4,20 @@ import { ControllerMetadataKey } from '../controller/controller.constants';
 import { DependencyContainer } from '../dependency-injection/dependency.container';
 import { HttpMethod } from '../http-methods/http-method.enum';
 import { HttpMethodMetadataKey } from '../http-methods/http-methods.constants';
+import { Logger } from '../logger/logger';
 import { MethodArgumentMetadataKey } from '../method-arguments/method-arguments.constants';
 import { AppProperties } from './types/app-properties.type';
 import { ArgumentIndices } from './types/argument-indices.type';
 
 export class BootstrapService {
   private readonly expressApp: express.Express;
+  private readonly logger: Logger;
   constructor(
     private readonly appClass: Constructible,
     private readonly appProperties: AppProperties,
   ) {
     this.expressApp = express();
+    this.logger = DependencyContainer.get(Logger);
   }
 
   bootstrap() {
@@ -49,7 +52,9 @@ export class BootstrapService {
           key,
         );
         const handler: Function = controller[key].bind(controller);
-        this.registerHandler(method, `${route}${path}`, handler, argumentIndices);
+        const fullPath: string = `${route}${path}`;
+        this.registerHandler(method, fullPath, handler, argumentIndices);
+        this.logger.info(`Mapped ${method.toUpperCase()} ${fullPath}`);
       }
     });
   }
