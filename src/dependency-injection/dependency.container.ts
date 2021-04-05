@@ -1,3 +1,4 @@
+import { DependencyInjectionMetadataKey } from './dependency-injection.constants';
 import { Dependency } from './types/dependency.type';
 import { Token } from './types/token.type';
 
@@ -12,12 +13,15 @@ export class DependencyContainer {
       if (typeof token === 'string') {
         throw 'Unknown token identifier!';
       }
-      const constructorParamTypes: any[] = Reflect.getMetadata('design:paramtypes', token);
+      const constructorParamTypes: any[] = Reflect.getMetadata(
+        DependencyInjectionMetadataKey.PARAMTYPES,
+        token,
+      );
       const constructorParamInstances: any[] = [];
       for (const i in constructorParamTypes) {
         let injectToken: Token = constructorParamTypes[i];
         if (typeof injectToken === 'object') {
-          injectToken = Reflect.getMetadata('injectTokens', token)[i];
+          injectToken = Reflect.getMetadata(DependencyInjectionMetadataKey.INJECT_TOKENS, token)[i];
           if (!injectToken) {
             throw `Cannot resolve dependency of ${token} at index ${i}`;
           }
