@@ -1,5 +1,3 @@
-import { Constructible } from '../../common/types/constructible.type';
-
-export function Injectable() {
-  return function (target: Constructible) {};
+export function Injectable(): ClassDecorator {
+  return function (target: any) {};
 }

@@ -1,8 +1,7 @@
-import { Constructible } from '../../common/types/constructible.type';
-
-export function Inject(token: string) {
-  return function (target: Constructible, index: number) {
-    const injectTokens: { [P: number]: string } = Reflect.getMetadata('injectTokens', target) || {};
+export function Inject(token: string): ParameterDecorator {
+  return function (target: any, key: string | symbol, index: number) {
+    const injectTokens: { [P: number]: string } =
+      Reflect.getMetadata('injectTokens', target, key) || {};
     injectTokens[index] = token;
   };
 }
