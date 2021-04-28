@@ -7,7 +7,7 @@ import { HttpMethodMetadataKey } from '../http-methods/http-methods.constants';
 import { Logger } from '../logger/logger';
 import { MethodArgumentMetadataKey } from '../method-arguments/method-arguments.constants';
 import { MiddlewareMetadataKey } from '../middleware/middleware.constants';
-import { AppProperties } from './types/app-properties.type';
+import { AppProperties, CustomProvider } from './types/app-properties.type';
 import { ArgumentIndices } from './types/argument-indices.type';
 
 export class BootstrapService {
@@ -26,6 +26,9 @@ export class BootstrapService {
     this.appProperties.useGlobalMiddlewares?.forEach((middleware: RequestHandler) => {
       this.expressApp.use(middleware);
     });
+    if (this.appProperties.customProviders) {
+      this.registerCustomProviders(this.appProperties.customProviders);
+    }
     if (this.appProperties.controllers) {
       this.registerControllers(this.appProperties.controllers);
     }
@@ -35,6 +38,16 @@ export class BootstrapService {
   private registerControllers(controllers: Constructible[]) {
     controllers.forEach((controller: Constructible) => {
       this.registerController(controller);
+    });
+  }
+
+  private registerCustomProviders(providers: CustomProvider[]) {
+    providers.forEach((provider: CustomProvider) => {
+      if (typeof provider.token === 'string') {
+        DependencyContainer.registerStringTokenDependency(provider.token, provider.instance);
+      } else {
+        DependencyContainer.registerClassTokenDependency(provider.token, provider.instance);
+      }
     });
   }
 
