@@ -194,3 +194,104 @@ export class HelloWorldController {
   }
 }
 ```
+
+## Services and dependency injection
+
+As mentioned before, there is one extra feature and that is dependency injection container. It makes use of this framework much more elegant.
+
+### Services
+
+You should extract your business to services (and/or more layers) and use controllers only to directly handle requests and responses.
+
+When you create your service, you will want to connect it with controller somehow. That is where dependency injection comes to play (well you can instantiate services inside of controller constructors, but NO).
+As your logic grows you will want to connect services together and more. ExpressTS makes all of that really easy.
+
+First you need to decorate you service class with `Injectable` decorator. It is required because of TypeScript limitations, and without it you can't inject dependencies to service.
+
+By default all services are registered as singletons (there will exist only one instance of service in container and it will be shared everywhere). If you want it not to be singleton, `Injectable` takes object as optional argument which has optional `boolean` property `singleton`. Obviously if set to `false` service won't be singleton and will be reinstantiated whenever injected.
+
+Let's create `src/hello-world.service.ts` and create class decorated with `Injectable` inside of it.
+
+```typescript
+import { Injectable } from '@msabo1/expressts';
+
+Injectable();
+export class HelloWorldService {
+  findMessage(): string {
+    return 'Hello world!';
+  }
+}
+```
+
+Now you just list it as controllers constructor parameter and ExpressTS will instantiate and inject it for you.
+It is important that you add correct type annotation because that is actually how DI mechanism knows what to inject.
+
+If you want to inject service inside of other service, steps are exactly the same.
+
+```typescript
+import { Controller, Get } from '@msabo1/expressts';
+import { HelloWorldService } from './hello-world.service';
+
+@Controller('/hello-world')
+export class HelloWorldController {
+  constructor(private readonly helloWorldService: HelloWorldService) {}
+
+  @Get()
+  get() {
+    return this.helloWorldService.findMessage();
+  }
+}
+```
+
+### Custom providers
+
+Except services, you can register custom providers that you can later inject. They can have `string` tokens, or you can redefine what is injected instead of class instance using obviously `class` token.
+
+Custom providers are registered inside of `App` decorator at root of application. `App` decorator properties object has optional property `customProviders` which is array of providers.
+
+For each provider you need to specify `token` which is of type `string` or some constructible type (class reference) and `instance` which is of type `any`.
+
+```typescript
+import { App } from '@msabo1/expressts';
+import { HelloWorldController } from './hello-world.controller';
+import { HelloWorldService } from './hello-world.service';
+
+@App({
+  port: 3000,
+  controllers: [HelloWorldController],
+  customProviders: [
+    { token: 'helloWorldService', instance: new HelloWorldService() },
+    { token: HelloWorldService, instance: { findMessage: () => 'Hello world 2!' } },
+  ],
+})
+export class Application {}
+```
+
+In this example we created two custom providers. What is actually going on here is that we set `string` token provider to provide instance of `HelloWorldService` and we overrode `class` token provider `HelloWorldService` to provide some custom object. That is really strange thing to do, at least in this context but we did it just to make point.
+
+What is left unclear is how to inject `string` token providers. To make that happen we use `Inject` decorator to decorate constructor arguments. `Inject` takes one mandatory argument which is `string` token we want to inject.
+
+```typescript
+import { Controller, Get, Inject } from '@msabo1/expressts';
+import { HelloWorldService } from './hello-world.service';
+
+@Controller('/hello-world')
+export class HelloWorldController {
+  constructor(
+    @Inject('helloWorldService') private readonly helloWorldService: HelloWorldService,
+    private readonly helloWorldService2: HelloWorldService,
+  ) {}
+
+  @Get()
+  get() {
+    return this.helloWorldService.findMessage();
+  }
+
+  @Get('/other')
+  get2() {
+    return this.helloWorldService2.findMessage();
+  }
+}
+```
+
+In this example, real `HelloWorldService` instance is `helloWorldService`, and custom object is `helloWorldService2`.
