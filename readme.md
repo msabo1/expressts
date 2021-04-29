@@ -150,3 +150,47 @@ get(@RequestParams() { id }: any, @Response res: any) {
     return id;
   }
 ```
+
+## Middlewares
+
+ExpressTS is compatible with every Express.js middleware.
+
+Just like in Express.js you can bind middlewares globally, router level (controller level) and route level.
+
+### Global middlewares
+
+To bind middlewares globally to all routes you need to register it in app root (in this case `src/main.ts`). `App` decorator properties object has optional property `useGlobalMiddlewares` which is array of middlewares and you just need to list them there.
+
+```typescript
+import { App } from '@msabo1/expressts';
+import { HelloWorldController } from './hello-world.controller';
+import express from 'express';
+
+@App({
+  port: 3000,
+  controllers: [HelloWorldController],
+  useGlobalMiddlewares: [express.urlencoded()],
+})
+export class Application {}
+```
+
+### Controller and route level middlewares
+
+To bind middlewares to all routes of some controller, you need to decorate it with `UseMiddlewares` decorator which takes list of middlewares as parameters (note that it doesn't take array of middlewares, you just pass middlewares).
+
+If you want to bind middlewares route level, just use the same decorator but applied to route handler.
+
+```typescript
+import { Controller, Get, UseMiddlewares } from '@msabo1/expressts';
+import express from express;
+
+@UseMiddlewares(express.urlencoded(), express.text()) // order of decorators doesn't matter in this case
+@Controller('/hello-world')
+export class HelloWorldController {
+  @Get()
+  @UseMiddlewares(express.static(...)) // order of decorators doesn't matter in this case either
+  get() {
+    return 'Hello world';
+  }
+}
+```
