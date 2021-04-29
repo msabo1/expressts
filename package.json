@@ -1,6 +1,6 @@
 {
   "name": "@msabo1/expressts",
-  "version": "0.0.1-alpha",
+  "version": "0.0.2-alpha",
   "description": "Express TypeScript is decorator driven TypeScript framework on top of Express.js that allows you to use Express truly TypeScript way.",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
