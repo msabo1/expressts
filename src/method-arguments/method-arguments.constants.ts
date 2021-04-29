@@ -3,4 +3,5 @@ export enum MethodArgumentMetadataKey {
   QUERY = 'request:query',
   PARAMS = 'request:params',
   REQUEST = 'request',
+  RESPONSE = 'response',
 }

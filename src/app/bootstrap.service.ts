@@ -112,6 +112,9 @@ export class BootstrapService {
       if (argumentIndices[MethodArgumentMetadataKey.REQUEST] != null) {
         args[argumentIndices[MethodArgumentMetadataKey.REQUEST] as number] = req;
       }
+      if (argumentIndices[MethodArgumentMetadataKey.RESPONSE] != null) {
+        args[argumentIndices[MethodArgumentMetadataKey.RESPONSE] as number] = res;
+      }
       const response: any = await handler(...args);
       res.send(response);
     };
