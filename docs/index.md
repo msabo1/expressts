@@ -113,6 +113,7 @@ import { Controller, Get, RequestParams } from '@msabo1/expressts';
 
 @Controller('/hello-world')
 export class HelloWorldController {
+  @Get('/:id')
   get(@RequestParams() params: any /* note that argument name can be whatever you like */) {
     return params;
   }
