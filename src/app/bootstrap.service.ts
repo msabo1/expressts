@@ -10,6 +10,8 @@ import { Logger } from '../logger/logger';
 import { MiddlewareMetadataKey } from '../middleware/middleware.constants';
 import { AppProperties, CustomProvider } from './types/app-properties.type';
 import { ArgumentIndices } from './types/argument-indices.type';
+import { ControllerMetadata } from './types/controller-metadata.type';
+import { MethodMetadata } from './types/method-metadata.type';
 
 export class BootstrapService {
   private readonly expressApp: express.Express;
@@ -53,60 +55,82 @@ export class BootstrapService {
   }
 
   private registerController(controllerClass: Constructible) {
+    const controllerMetadata: ControllerMetadata = this.getControllerMetadata(controllerClass);
     const controller: any = DependencyContainer.get(controllerClass);
-    const route: string = Reflect.getMetadata(ControllerMetadataKey.ROUTE, controllerClass);
-    const controllerDefaultHttpStatus: number | undefined = Reflect.getMetadata(
-      DefaultHttpStatusMetadataKey.DEFAULT_HTTP_STATUS,
-      controllerClass,
-    );
     const keys: string[] = Object.keys(controllerClass.prototype);
     const router: Router = express.Router();
-    const middlewares: RequestHandler[] = Reflect.getMetadata(
-      MiddlewareMetadataKey.USE_MIDDLEWARES,
-      controllerClass,
-    );
-    if (middlewares) {
-      router.use(middlewares);
+    if (controllerMetadata.middlewares) {
+      router.use(controllerMetadata.middlewares);
     }
     keys.forEach((key: string) => {
-      const method: HttpMethod = Reflect.getMetadata(
-        HttpMethodMetadataKey.METHOD,
-        controllerClass.prototype,
+      const methodMetadata: MethodMetadata | undefined = this.getMethodMetadata(
+        controllerClass,
         key,
       );
-      if (method) {
-        const path: string =
-          Reflect.getMetadata(HttpMethodMetadataKey.PATH, controllerClass.prototype, key) || '';
-        const defaultHttpStatus: number | undefined =
-          Reflect.getMetadata(
-            DefaultHttpStatusMetadataKey.DEFAULT_HTTP_STATUS,
-            controllerClass.prototype,
-            key,
-          ) || controllerDefaultHttpStatus;
-        const methodMiddlewares: RequestHandler[] =
-          Reflect.getMetadata(
-            MiddlewareMetadataKey.USE_MIDDLEWARES,
-            controllerClass.prototype,
-            key,
-          ) || [];
-        const argumentIndices: ArgumentIndices = this.getArgumentIndices(
-          controllerClass.prototype,
-          key,
-        );
+      if (methodMetadata) {
         const handler: Function = controller[key].bind(controller);
         this.registerHandler(
           router,
-          method,
-          path,
-          methodMiddlewares,
+          methodMetadata.httpMethod,
+          methodMetadata.path,
+          methodMetadata.middlewares || [],
           handler,
-          argumentIndices,
-          defaultHttpStatus,
+          methodMetadata.argumentIndices,
+          methodMetadata.defaultHttpStatus || controllerMetadata.defaultHttpStatus,
         );
-        this.logger.info(`Mapped ${method.toUpperCase()} ${route}${path}`);
+        this.logger.info(
+          `Mapped ${methodMetadata.httpMethod.toUpperCase()} ${controllerMetadata.route}${
+            methodMetadata.path
+          }`,
+        );
       }
     });
-    this.expressApp.use(route, router);
+    this.expressApp.use(controllerMetadata.route, router);
+  }
+
+  private getControllerMetadata(controller: Constructible): ControllerMetadata {
+    const route: string = Reflect.getMetadata(ControllerMetadataKey.ROUTE, controller);
+    const defaultHttpStatus: number | undefined = Reflect.getMetadata(
+      DefaultHttpStatusMetadataKey.DEFAULT_HTTP_STATUS,
+      controller,
+    );
+    const middlewares: RequestHandler[] = Reflect.getMetadata(
+      MiddlewareMetadataKey.USE_MIDDLEWARES,
+      controller,
+    );
+    return { route, middlewares, defaultHttpStatus };
+  }
+
+  private getMethodMetadata(
+    controller: Constructible,
+    methodKey: string,
+  ): MethodMetadata | undefined {
+    const httpMethod: HttpMethod = Reflect.getMetadata(
+      HttpMethodMetadataKey.METHOD,
+      controller.prototype,
+      methodKey,
+    );
+    if (httpMethod) {
+      const path: string =
+        Reflect.getMetadata(HttpMethodMetadataKey.PATH, controller.prototype, methodKey) || '';
+      const defaultHttpStatus: number = Reflect.getMetadata(
+        DefaultHttpStatusMetadataKey.DEFAULT_HTTP_STATUS,
+        controller.prototype,
+        methodKey,
+      );
+      const middlewares: RequestHandler[] =
+        Reflect.getMetadata(
+          MiddlewareMetadataKey.USE_MIDDLEWARES,
+          controller.prototype,
+          methodKey,
+        ) || [];
+      const argumentIndices: ArgumentIndices = this.getArgumentIndices(
+        controller.prototype,
+        methodKey,
+      );
+      return { httpMethod, path, defaultHttpStatus, middlewares, argumentIndices };
+    }
+    return undefined;
   }
 
   private registerHandler(
