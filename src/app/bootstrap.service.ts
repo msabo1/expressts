@@ -1,11 +1,11 @@
 import express, { Request, RequestHandler, Response, Router } from 'express';
 import { Constructible } from '../common/types/constructible.type';
-import { ControllerMetadataKey } from '../controller/controller.constants';
+import { ControllerMetadataKey } from '../controllers/controller.constants';
+import { HttpMethod } from '../controllers/http-methods/http-method.enum';
+import { HttpMethodMetadataKey } from '../controllers/http-methods/http-methods.constants';
+import { MethodArgumentMetadataKey } from '../controllers/method-arguments/method-arguments.constants';
 import { DependencyContainer } from '../dependency-injection/dependency.container';
-import { HttpMethod } from '../http-methods/http-method.enum';
-import { HttpMethodMetadataKey } from '../http-methods/http-methods.constants';
 import { Logger } from '../logger/logger';
-import { MethodArgumentMetadataKey } from '../method-arguments/method-arguments.constants';
 import { MiddlewareMetadataKey } from '../middleware/middleware.constants';
 import { AppProperties, CustomProvider } from './types/app-properties.type';
 import { ArgumentIndices } from './types/argument-indices.type';
