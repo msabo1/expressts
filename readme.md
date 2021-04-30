@@ -151,6 +151,46 @@ get(@RequestParams() { id }: any, @Response res: any) {
   }
 ```
 
+### Change response status code
+
+You can change response status code using `DefaultHttpStatus` decorator. It takes one mandatory parameter `status` of type `number` which represents HTTP status code. You can apply that decorator to controller (it will obviously change default status code for all route handlers) or you can apply it to method.
+
+```typescript
+import { Controller, Get, Post, DefaultStatusCode } from '@msabo1/expressts';
+
+@Controller('/hello-world')
+@DefaultHttpStatus(201)
+export class HelloWorldController {
+  @Get()
+  @DefaultHttpStatus(500)
+  get() {
+    return 'Hello world';
+  }
+
+  @Post()
+  create() {
+    return 'Hello world created';
+  }
+}
+```
+
+In this example `POST` request will have response code `201` because that is controller's default code. `GET` request will have response code `500` because we overrode default one.
+
+If you want to change status code dynamically, you will have to inject `res` object and use its `status` method inside of method's body. Doing it this way will override all defaults.
+
+```typescript
+import { Controller, Get, Response } from '@msabo1/expressts';
+
+@Controller('/hello-world')
+export class HelloWorldController {
+  @Get()
+  get(@Response() res: any) {
+    res.status(500);
+    return 'Hello world';
+  }
+}
+```
+
 ## Middlewares
 
 ExpressTS is compatible with every Express.js middleware.
