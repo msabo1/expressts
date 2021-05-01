@@ -191,6 +191,30 @@ export class HelloWorldController {
 }
 ```
 
+### Set headers
+
+You can set headers using `Headers` decorator. It takes one mandatory argument `headers` which is object whose keys are header keys and values are header values. Values must be of type `string`. You can apply that decorator to controller (it will obviously set headers for all route handlers) or you can apply it to method.
+If same headers are set controller and method level, method's headers will override controller's.
+
+```typescript
+import { Controller, Get, Post, Headers } from '@msabo1/expressts';
+
+@Controller('/hello-world')
+@Headers({ hello: 'world' })
+export class HelloWorldController {
+  @Get()
+  @Headers({
+    'my-header': 'my-value',
+    myHeader: 'myValue',
+  })
+  get() {
+    return 'Hello world';
+  }
+}
+```
+
+If you want to set headers dynamically you will need to inject `res` object and use its `set` method. If header existed before (default or set with `Headers` decorator) this will override it.
+
 ## Middlewares
 
 ExpressTS is compatible with every Express.js middleware.
