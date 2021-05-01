@@ -5,6 +5,8 @@ import { DefaultHttpStatusMetadataKey } from '../controllers/default-http-status
 import { HttpMethod } from '../controllers/http-methods/http-method.enum';
 import { HttpMethodMetadataKey } from '../controllers/http-methods/http-methods.constants';
 import { MethodArgumentMetadataKey } from '../controllers/method-arguments/method-arguments.constants';
+import { Headers } from '../controllers/response-headers/headers.type';
+import { ResponseHeadersMetadataKey } from '../controllers/response-headers/response-headers.constants';
 import { DependencyContainer } from '../dependency-injection/dependency.container';
 import { Logger } from '../logger/logger';
 import { MiddlewareMetadataKey } from '../middleware/middleware.constants';
@@ -69,6 +71,10 @@ export class BootstrapService {
       );
       if (methodMetadata) {
         const handler: Function = controller[key].bind(controller);
+        const headers: Headers = {
+          ...(controllerMetadata.headers || {}),
+          ...(methodMetadata.headers || {}),
+        };
         this.registerHandler(
           router,
           methodMetadata.httpMethod,
@@ -77,6 +83,7 @@ export class BootstrapService {
           handler,
           methodMetadata.argumentIndices,
           methodMetadata.defaultHttpStatus || controllerMetadata.defaultHttpStatus,
+          headers,
         );
         this.logger.info(
           `Mapped ${methodMetadata.httpMethod.toUpperCase()} ${controllerMetadata.route}${
@@ -94,11 +101,12 @@ export class BootstrapService {
       DefaultHttpStatusMetadataKey.DEFAULT_HTTP_STATUS,
       controller,
     );
+    const headers: Headers = Reflect.getMetadata(ResponseHeadersMetadataKey.HEADERS, controller);
     const middlewares: RequestHandler[] = Reflect.getMetadata(
       MiddlewareMetadataKey.USE_MIDDLEWARES,
       controller,
     );
-    return { route, middlewares, defaultHttpStatus };
+    return { route, middlewares, defaultHttpStatus, headers };
   }
 
   private getMethodMetadata(
@@ -124,11 +132,16 @@ export class BootstrapService {
           controller.prototype,
           methodKey,
         ) || [];
+      const headers: Headers = Reflect.getMetadata(
+        ResponseHeadersMetadataKey.HEADERS,
+        controller.prototype,
+        methodKey,
+      );
       const argumentIndices: ArgumentIndices = this.getArgumentIndices(
         controller.prototype,
         methodKey,
       );
-      return { httpMethod, path, defaultHttpStatus, middlewares, argumentIndices };
+      return { httpMethod, path, defaultHttpStatus, middlewares, argumentIndices, headers };
     }
     return undefined;
   }
@@ -141,6 +154,7 @@ export class BootstrapService {
     handler: Function,
     argumentIndices: ArgumentIndices,
     defaultHttpStatus?: number,
+    headers?: Headers,
   ) {
     const expressHandler: RequestHandler = async (req: Request, res: Response) => {
       const args: any[] = [];
@@ -161,6 +175,9 @@ export class BootstrapService {
       }
       if (defaultHttpStatus) {
         res.status(defaultHttpStatus);
+      }
+      if (headers) {
+        res.set(headers);
       }
       const response: any = await handler(...args);
       res.send(response);
