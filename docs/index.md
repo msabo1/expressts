@@ -151,6 +151,70 @@ get(@RequestParams() { id }: any, @Response res: any) {
   }
 ```
 
+### Change response status code
+
+You can change response status code using `DefaultHttpStatus` decorator. It takes one mandatory parameter `status` of type `number` which represents HTTP status code. You can apply that decorator to controller (it will obviously change default status code for all route handlers) or you can apply it to method.
+
+```typescript
+import { Controller, Get, Post, DefaultStatusCode } from '@msabo1/expressts';
+
+@Controller('/hello-world')
+@DefaultHttpStatus(201)
+export class HelloWorldController {
+  @Get()
+  @DefaultHttpStatus(500)
+  get() {
+    return 'Hello world';
+  }
+
+  @Post()
+  create() {
+    return 'Hello world created';
+  }
+}
+```
+
+In this example `POST` request will have response code `201` because that is controller's default code. `GET` request will have response code `500` because we overrode default one.
+
+If you want to change status code dynamically, you will have to inject `res` object and use its `status` method inside of method's body. Doing it this way will override all defaults.
+
+```typescript
+import { Controller, Get, Response } from '@msabo1/expressts';
+
+@Controller('/hello-world')
+export class HelloWorldController {
+  @Get()
+  get(@Response() res: any) {
+    res.status(500);
+    return 'Hello world';
+  }
+}
+```
+
+### Set headers
+
+You can set headers using `Headers` decorator. It takes one mandatory argument `headers` which is object whose keys are header keys and values are header values. Values must be of type `string`. You can apply that decorator to controller (it will obviously set headers for all route handlers) or you can apply it to method.
+If same headers are set controller and method level, method's headers will override controller's.
+
+```typescript
+import { Controller, Get, Post, Headers } from '@msabo1/expressts';
+
+@Controller('/hello-world')
+@Headers({ hello: 'world' })
+export class HelloWorldController {
+  @Get()
+  @Headers({
+    'my-header': 'my-value',
+    myHeader: 'myValue',
+  })
+  get() {
+    return 'Hello world';
+  }
+}
+```
+
+If you want to set headers dynamically you will need to inject `res` object and use its `set` method. If header existed before (default or set with `Headers` decorator) this will override it.
+
 ## Middlewares
 
 ExpressTS is compatible with every Express.js middleware.
