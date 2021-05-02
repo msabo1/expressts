@@ -10,12 +10,16 @@ import { ResponseHeadersMetadataKey } from '../controllers/response-headers/resp
 import { DependencyContainer } from '../dependency-injection/dependency.container';
 import { Logger } from '../logger/logger';
 import { MiddlewareMetadataKey } from '../middleware/middleware.constants';
+import { AppProviderToken } from './app.constants';
+import { LifecycleHookMetadataKey } from './lifecycle-hooks/lifecycle-hooks.constants';
+import { AppMetadata } from './types/app-metadata.type';
 import { AppProperties, CustomProvider } from './types/app-properties.type';
 import { ArgumentIndices } from './types/argument-indices.type';
 import { ControllerMetadata } from './types/controller-metadata.type';
 import { MethodMetadata } from './types/method-metadata.type';
 
 export class BootstrapService {
+  private appInstance: any;
   private readonly expressApp: express.Express;
   private readonly logger: Logger;
   constructor(
@@ -27,17 +31,86 @@ export class BootstrapService {
   }
 
   bootstrap() {
+    this.appProperties.customProviders = [
+      ...(this.appProperties.customProviders || []),
+      { token: AppProviderToken.EXPRESS_APP_INSTANCE, instance: this.expressApp },
+    ];
+    this.registerCustomProviders(this.appProperties.customProviders);
+    this.appInstance = DependencyContainer.get(this.appClass);
+    const appMetadata: AppMetadata = this.getAppMetadata();
+    // execute before hook
+    if (appMetadata.beforeGlobalMiddlewaresBoundMethodKey) {
+      this.appInstance[appMetadata.beforeGlobalMiddlewaresBoundMethodKey]();
+    }
+    // start middleware bind
     this.expressApp.use(express.json());
     this.appProperties.useGlobalMiddlewares?.forEach((middleware: RequestHandler) => {
       this.expressApp.use(middleware);
     });
-    if (this.appProperties.customProviders) {
-      this.registerCustomProviders(this.appProperties.customProviders);
+    // end middleware bind
+    // execute after hook
+    if (appMetadata.afterGlobalMiddlewaresBoundMethodKey) {
+      this.appInstance[appMetadata.afterGlobalMiddlewaresBoundMethodKey]();
     }
+    // execute before hook
+    if (appMetadata.beforeRoutesBoundMethodKey) {
+      this.appInstance[appMetadata.beforeRoutesBoundMethodKey]();
+    }
+    // start route bind
     if (this.appProperties.controllers) {
       this.registerControllers(this.appProperties.controllers);
     }
+    // end route bind
+    // execute after hook
+    if (appMetadata.afterRoutesBoundMethodKey) {
+      this.appInstance[appMetadata.afterRoutesBoundMethodKey]();
+    }
+    // execute before hook
+    if (appMetadata.beforeListenStartedMethodKey) {
+      this.appInstance[appMetadata.beforeListenStartedMethodKey]();
+    }
+    // start listen
     this.expressApp.listen(this.appProperties.port);
+    // end of start of listen
+    // execute after hook
+    if (appMetadata.afterListenStartedMethodKey) {
+      this.appInstance[appMetadata.afterListenStartedMethodKey]();
+    }
+  }
+
+  private getAppMetadata(): AppMetadata {
+    const beforeGlobalMiddlewaresBoundMethodKey: string = Reflect.getMetadata(
+      LifecycleHookMetadataKey.BEFORE_MIDDLEWARES_BOUND,
+      this.appClass.prototype,
+    );
+    const afterGlobalMiddlewaresBoundMethodKey: string = Reflect.getMetadata(
+      LifecycleHookMetadataKey.AFTER_MIDDLEWARES_BOUND,
+      this.appClass.prototype,
+    );
+    const beforeRoutesBoundMethodKey: string = Reflect.getMetadata(
+      LifecycleHookMetadataKey.BEFORE_ROUTES_BOUND,
+      this.appClass.prototype,
+    );
+    const afterRoutesBoundMethodKey: string = Reflect.getMetadata(
+      LifecycleHookMetadataKey.AFTER_ROUTES_BOUND,
+      this.appClass.prototype,
+    );
+    const beforeListenStartedMethodKey: string = Reflect.getMetadata(
+      LifecycleHookMetadataKey.BEFORE_LISTEN_STARTED,
+      this.appClass.prototype,
+    );
+    const afterListenStartedMethodKey: string = Reflect.getMetadata(
+      LifecycleHookMetadataKey.AFTER_LISTEN_STARTED,
+      this.appClass.prototype,
+    );
+    return {
+      beforeGlobalMiddlewaresBoundMethodKey,
+      afterGlobalMiddlewaresBoundMethodKey,
+      beforeRoutesBoundMethodKey,
+      afterRoutesBoundMethodKey,
+      beforeListenStartedMethodKey,
+      afterListenStartedMethodKey,
+    };
   }
 
   private registerControllers(controllers: Constructible[]) {
