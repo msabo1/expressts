@@ -2,6 +2,9 @@
 
 ExpressTS (Express TypeScript) is decorator driven TypeScript framework on top of Express.js that allows you to use Express truly TypeScript way.
 
+[Github](https://github.com/msabo1/expressts)
+[Npm](https://www.npmjs.com/package/@msabo1/expressts)
+
 # Why
 
 Let's say you have decided you want use Express with Typescript. Great, there are type definitions for Express, just install them and you are using Express with TypeScript. But soon you realize that there is basically zero benefits of using TypeScript with Express that way (it even gets much more complicated). So you come up with idea to encapsulate some stuff in classes, it gets a bit prettier and you have some structure in your project. But again you realize you have actually done nothing. What to do next?
