@@ -156,7 +156,7 @@ get(@RequestParams() { id }: any, @Response res: any) {
 
 ### Change response status code
 
-You can change response status code using `DefaultHttpStatus` decorator. It takes one mandatory parameter `status` of type `number` which represents HTTP status code. You can apply that decorator to controller (it will obviously change default status code for all route handlers) or you can apply it to method.
+You can change response status code using `DefaultHttpStatus` decorator. It takes one mandatory parameter `code` of type `number` which represents HTTP status code. You can apply that decorator to controller (it will obviously change default status code for all route handlers) or you can apply it to method.
 
 ```typescript
 import { Controller, Get, Post, DefaultStatusCode } from '@msabo1/expressts';
