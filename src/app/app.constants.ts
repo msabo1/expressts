@@ -1,3 +1,3 @@
-export enum AppMetadataKey {
-  EXPRESS_APP_INSTANCE = 'instance:express',
+export enum AppProviderToken {
+  EXPRESS_APP_INSTANCE = 'express-app',
 }

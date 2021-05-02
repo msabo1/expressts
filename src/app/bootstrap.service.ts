@@ -10,7 +10,7 @@ import { ResponseHeadersMetadataKey } from '../controllers/response-headers/resp
 import { DependencyContainer } from '../dependency-injection/dependency.container';
 import { Logger } from '../logger/logger';
 import { MiddlewareMetadataKey } from '../middleware/middleware.constants';
-import { AppMetadataKey } from './app.constants';
+import { AppProviderToken } from './app.constants';
 import { LifecycleHookMetadataKey } from './lifecycle-hooks/lifecycle-hooks.constants';
 import { AppMetadata } from './types/app-metadata.type';
 import { AppProperties, CustomProvider } from './types/app-properties.type';
@@ -31,11 +31,13 @@ export class BootstrapService {
   }
 
   bootstrap() {
-    if (this.appProperties.customProviders) {
-      this.registerCustomProviders(this.appProperties.customProviders);
-    }
+    this.appProperties.customProviders = [
+      ...(this.appProperties.customProviders || []),
+      { token: AppProviderToken.EXPRESS_APP_INSTANCE, instance: this.expressApp },
+    ];
+    this.registerCustomProviders(this.appProperties.customProviders);
+    this.appInstance = DependencyContainer.get(this.appClass);
     const appMetadata: AppMetadata = this.getAppMetadata();
-    this.createAppInstance(appMetadata.expressInstancePropertyKey);
     // execute before hook
     if (appMetadata.beforeGlobalMiddlewaresBoundMethodKey) {
       this.appInstance[appMetadata.beforeGlobalMiddlewaresBoundMethodKey]();
@@ -76,18 +78,7 @@ export class BootstrapService {
     }
   }
 
-  private createAppInstance(expressInstancePropertyKey?: string) {
-    this.appInstance = DependencyContainer.get(this.appClass);
-    if (expressInstancePropertyKey) {
-      this.appInstance[expressInstancePropertyKey] = this.expressApp;
-    }
-  }
-
   private getAppMetadata(): AppMetadata {
-    const expressInstancePropertyKey: string = Reflect.getMetadata(
-      AppMetadataKey.EXPRESS_APP_INSTANCE,
-      this.appClass.prototype,
-    );
     const beforeGlobalMiddlewaresBoundMethodKey: string = Reflect.getMetadata(
       LifecycleHookMetadataKey.BEFORE_MIDDLEWARES_BOUND,
       this.appClass.prototype,
@@ -113,7 +104,6 @@ export class BootstrapService {
       this.appClass.prototype,
     );
     return {
-      expressInstancePropertyKey,
       beforeGlobalMiddlewaresBoundMethodKey,
       afterGlobalMiddlewaresBoundMethodKey,
       beforeRoutesBoundMethodKey,
