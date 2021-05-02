@@ -2,6 +2,9 @@
 
 ExpressTS (Express TypeScript) is decorator driven TypeScript framework on top of Express.js that allows you to use Express truly TypeScript way.
 
+[Github](https://github.com/msabo1/expressts)
+[Npm](https://www.npmjs.com/package/@msabo1/expressts)
+
 # Why
 
 Let's say you have decided you want use Express with Typescript. Great, there are type definitions for Express, just install them and you are using Express with TypeScript. But soon you realize that there is basically zero benefits of using TypeScript with Express that way (it even gets much more complicated). So you come up with idea to encapsulate some stuff in classes, it gets a bit prettier and you have some structure in your project. But again you realize you have actually done nothing. What to do next?
@@ -153,7 +156,7 @@ get(@RequestParams() { id }: any, @Response res: any) {
 
 ### Change response status code
 
-You can change response status code using `DefaultHttpStatus` decorator. It takes one mandatory parameter `status` of type `number` which represents HTTP status code. You can apply that decorator to controller (it will obviously change default status code for all route handlers) or you can apply it to method.
+You can change response status code using `DefaultHttpStatus` decorator. It takes one mandatory parameter `code` of type `number` which represents HTTP status code. You can apply that decorator to controller (it will obviously change default status code for all route handlers) or you can apply it to method.
 
 ```typescript
 import { Controller, Get, Post, DefaultStatusCode } from '@msabo1/expressts';
@@ -359,3 +362,83 @@ export class HelloWorldController {
 ```
 
 In this example, real `HelloWorldService` instance is `helloWorldService`, and custom object is `helloWorldService2`.
+
+## Lifecycle hooks
+
+You can hook and execute code before or after certain points in application bootstrap process. In order to do that you need to implement methods inside of you app root class (in our examples that is `Application` class inside of `src/main.ts`). Methods need to be decorated with proper decorator. Possible decorators (and obviously hooks) are (listed in order how they are actually executed):
+
+`BeforeGlobalMiddlewaresBound`
+
+`AfterGlobalMiddlewaresBound`
+
+`BeforeRoutesBound`
+
+`AfterRoutesBound`
+
+`BeforeListenStarted`
+
+`AfterListenStarted`
+
+Some of hooks overlap and they are equivalent but you shouldn't assume that. You should use exact hook you need because order of execution can change at any version and it won't be considered breaking change (if no other side effects).
+
+```typescript
+import { App, BeforeRoutesBound } from '@msabo1/expressts';
+import { HelloWorldController } from './hello-world.controller';
+import { HelloWorldService } from './hello-world.service';
+
+@App({
+  port: 3000,
+  controllers: [HelloWorldController],
+})
+export class Application {
+  constructor(private readonly helloWorldService: HelloWorldService) {}
+
+  @BeforeRoutesBound()
+  private beforeRoutes() {
+    console.log('I am executed just before routes are bound');
+    console.log(this.helloWorldService.findMessage());
+  }
+}
+```
+
+As you can see in this example, you can inject services and custom providers inside of your application root. You can inject controllers as well.
+
+## Express app instance
+
+You can access express app instance used to build server by injecting it in constructors with `ExpressAppInstance` decorator.
+
+```typescript
+import {
+  App,
+  BeforeRoutesBound,
+  AfterGlobalMiddlewaresBound,
+  ExpressAppInstance,
+} from '@msabo1/expressts';
+import { HelloWorldController } from './hello-world.controller';
+import { HelloWorldService } from './hello-world.service';
+import express from 'express';
+
+@App({
+  port: 3000,
+  controllers: [HelloWorldController],
+})
+export class Application {
+  constructor(
+    private readonly helloWorldService: HelloWorldService,
+    @ExpressAppInstance() private readonly expressApp: any,
+  ) {}
+
+  @BeforeRoutesBound()
+  private beforeRoutes() {
+    console.log('I am executed just before routes are bound');
+    console.log(this.helloWorldService.findMessage());
+  }
+
+  @AfterGlobalMiddlewaresBound()
+  private afterMiddlewares() {
+    this.expressApp.use(express.urlencoded());
+  }
+}
+```
+
+You can inject express app instance to controllers and services as well.

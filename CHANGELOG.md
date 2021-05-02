@@ -1,3 +1,10 @@
+## v0.0.4-alpha
+
+### Features
+
+- Lifecycle hooks api ([#13](https://github.com/msabo1/expressts/pull/13))
+- Inject express app api ([#13](https://github.com/msabo1/expressts/pull/13)) closes ([#9](https://github.com/msabo1/expressts/issues/9))
+
 ## v0.0.3-alpha
 
 ### Features
